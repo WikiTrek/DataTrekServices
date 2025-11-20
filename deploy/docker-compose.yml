@@ -1,0 +1,64 @@
+version: '1.0'
+
+services:
+  # SPARQL Query Service (Blazegraph)
+  sparql:
+    image: wikibase/wdqs:latest
+    container_name: wikibase-sparql
+    ports:
+      - "127.0.0.1:3030:9999"  # Only accessible from localhost
+    volumes:
+      - sparql-data:/var/lib/wdqs
+    environment:
+      - WIKIBASE_HOST=http://localhost:8080  # Points to Apache/MediaWiki
+      - WIKIBASE_SCHEME=https
+      - WIKIBASE_PROTO_HOST=yourdomain.com:443
+    restart: unless-stopped
+    networks:
+      - data_services
+
+  # QuickStatements
+  quickstatements:
+    image: wikibase/quickstatements:latest
+    container_name: wikibase-quickstatements
+    ports:
+      - "127.0.0.1:8081:80"  # Only accessible from localhost
+    volumes:
+      - quickstatements-data:/quickstatements/data
+    environment:
+      - QS_PUBLIC_SCHEME_HOST_PORT=yourdomain.com:443
+      - WIKIBASE_HOST=http://localhost:8080  # Points to Apache/MediaWiki
+      - WIKIBASE_PROTOCOL_WHITELIST=http://|https://
+    restart: unless-stopped
+    networks:
+      - data_services
+
+  # Elasticsearch (required by Wikibase)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: wikibase-elasticsearch
+    ports:
+      - "127.0.0.1:9200:9200"  # Only accessible from localhost
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+    networks:
+      - data_services
+
+volumes:
+  sparql-data:
+  quickstatements-data:
+  elasticsearch-data:
+
+networks:
+  data_services:
+    driver: bridge
