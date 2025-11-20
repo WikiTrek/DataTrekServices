@@ -19,7 +19,7 @@ services:
 
   # QuickStatements
   quickstatements:
-    image: wikibase/quickstatements:latest
+    image: wikibase/quickstatements:1
     container_name: wikibase-quickstatements
     ports:
       - "127.0.0.1:8081:80"  # Only accessible from localhost
@@ -29,13 +29,15 @@ services:
       - QS_PUBLIC_SCHEME_HOST_PORT=yourdomain.com:443
       - WIKIBASE_HOST=http://localhost:8080  # Points to Apache/MediaWiki
       - WIKIBASE_PROTOCOL_WHITELIST=http://|https://
+      - QUICKSTATEMENTS_PUBLIC_URL=https://${QUICKSTATEMENTS_PUBLIC_HOST}
+      - WIKIBASE_PUBLIC_URL=https://${WIKIBASE_PUBLIC_HOST}
     restart: unless-stopped
     networks:
       - data_services
 
   # Elasticsearch (required by Wikibase)
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    image: wikibase/elasticsearch:1
     container_name: wikibase-elasticsearch
     ports:
       - "127.0.0.1:9200:9200"  # Only accessible from localhost
@@ -43,7 +45,7 @@ services:
       - elasticsearch-data:/usr/share/elasticsearch/data
     environment:
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m -Dlog4j2.formatMsgNoLookups=true"
       - discovery.type=single-node
       - xpack.security.enabled=false
     ulimits:
